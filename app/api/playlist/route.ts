@@ -102,22 +102,25 @@ export async function GET() {
     return NextResponse.json({ error: "PEXELS_API_KEY not configured" }, { status: 500 });
   }
 
-  // Run all fetches in parallel: 1 random + 11 curated
-  const [randomVideo, ...curatedResults] = await Promise.all([
-    fetchRandom(apiKey),
-    ...CURATED_IDS.map((id) => fetchById(id, apiKey)),
-  ]);
-
-  const curated = curatedResults.filter((v): v is VideoData => v !== null);
-
-  // Random video is always first so it's seen immediately on page load
-  const playlist: VideoData[] = [];
-  if (randomVideo) playlist.push(randomVideo);
-  playlist.push(...curated);
-
-  if (!playlist.length) {
-    return NextResponse.json({ error: "No videos available" }, { status: 404 });
+  // DEBUG: test one call directly and surface the response
+  try {
+    const testRes = await fetch("https://api.pexels.com/videos/videos/32387648", {
+      headers: { Authorization: apiKey },
+      cache: "no-store",
+    });
+    if (!testRes.ok) {
+      const body = await testRes.text();
+      return NextResponse.json({
+        debug: true,
+        status: testRes.status,
+        statusText: testRes.statusText,
+        body,
+        keyPrefix: apiKey.slice(0, 8),
+      });
+    }
+    const data = await testRes.json();
+    return NextResponse.json({ debug: true, status: 200, video_files_count: data.video_files?.length });
+  } catch (e) {
+    return NextResponse.json({ debug: true, fetchError: String(e) });
   }
-
-  return NextResponse.json({ videos: playlist });
 }
