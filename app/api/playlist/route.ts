@@ -70,13 +70,9 @@ async function fetchById(id: number, apiKey: string): Promise<VideoData | null> 
       headers: { Authorization: apiKey },
       next:    { revalidate: 86_400 }, // 24 h
     });
-    if (!res.ok) {
-      console.error(`[playlist] fetchById ${id} → HTTP ${res.status}`);
-      return null;
-    }
+    if (!res.ok) return null;
     return toVideoData(await res.json());
-  } catch (e) {
-    console.error(`[playlist] fetchById ${id} threw:`, e);
+  } catch {
     return null;
   }
 }
@@ -87,18 +83,14 @@ async function fetchRandom(apiKey: string): Promise<VideoData | null> {
     const page = Math.random() < 0.5 ? 1 : 2;
     const url  = `https://api.pexels.com/videos/search?query=hiking+mountain+trail&per_page=15&page=${page}&orientation=landscape&size=medium`;
     const res  = await fetch(url, { headers: { Authorization: apiKey }, cache: "no-store" });
-    if (!res.ok) {
-      console.error(`[playlist] fetchRandom → HTTP ${res.status}`);
-      return null;
-    }
+    if (!res.ok) return null;
 
     const data = await res.json();
     if (!data.videos?.length) return null;
 
     const video = data.videos[Math.floor(Math.random() * data.videos.length)];
     return toVideoData(video);
-  } catch (e) {
-    console.error(`[playlist] fetchRandom threw:`, e);
+  } catch {
     return null;
   }
 }
@@ -124,7 +116,7 @@ export async function GET() {
   playlist.push(...curated);
 
   if (!playlist.length) {
-    return NextResponse.json({ error: "No videos available", keyLen: apiKey.length, keyStart: apiKey.charCodeAt(0) }, { status: 404 });
+    return NextResponse.json({ error: "No videos available" }, { status: 404 });
   }
 
   return NextResponse.json({ videos: playlist });
