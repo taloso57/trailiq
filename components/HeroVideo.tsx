@@ -11,8 +11,8 @@ import type { VideoData } from "@/app/api/playlist/route";
  *  • Fetches /api/playlist → array of 12 videos (1 random + 11 curated)
  *  • Desktop: two <video> elements (A / B) that crossfade using CSS opacity
  *    transitions. While video A plays, video B silently pre-buffers the next
- *    clip. On onEnded, B fades in and A fades out, then A reloads the clip
- *    after that for the next crossfade.
+ *    clip. 3 seconds before A ends, both elements crossfade simultaneously
+ *    over 2 s (cinematic blend). After the fade, A reloads the next-next video.
  *  • Mobile: no video is decoded — a single <div> cycles through the poster
  *    images every 8 s with a fade transition.
  *  • Fallback: if the API call fails, this component renders nothing and the
@@ -37,6 +37,11 @@ export default function HeroVideo() {
   const idxRef      = useRef(0);                 // index of the currently-playing video
   const vidsRef     = useRef<VideoData[]>([]);   // mirrors videos state
   const pendingLoad = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Per-slot flag: has transition already been triggered for this video?
+  // Prevents timeupdate from firing transition multiple times.
+  const aTriggered  = useRef(false);
+  const bTriggered  = useRef(false);
 
   // React state drives CSS opacity (triggers re-render)
   const [aOp, setAOp] = useState(0);
@@ -72,6 +77,8 @@ export default function HeroVideo() {
 
     active.current  = "a";
     idxRef.current  = 0;
+    aTriggered.current = false;
+    bTriggered.current = false;
 
     const elA = aRef.current;
     const elB = bRef.current;
@@ -98,11 +105,11 @@ export default function HeroVideo() {
 
   // ── Crossfade helper ───────────────────────────────────────────────────────
   /**
-   * Called when `from` slot's video ends.
+   * Called when `from` slot's video is ~3 s from ending (or onEnded fallback).
    * 1. Marks `to` as the active slot.
-   * 2. Fades `to` in (if already buffered) or waits for its onCanPlay.
-   * 3. Fades `from` out 800 ms later (overlap = crossfade).
-   * 4. After transition, reloads `from` with the next-next video.
+   * 2. Plays `to` (if already buffered) or waits for its onCanPlay.
+   * 3. Simultaneously fades `to` in and `from` out over 2 s (true crossfade).
+   * 4. After 2.2 s, reloads `from` with the next-next video for the next fade.
    */
   function transition(from: "a" | "b") {
     const to: "a" | "b" = from === "a" ? "b" : "a";
@@ -111,9 +118,12 @@ export default function HeroVideo() {
 
     // Advance playlist index
     const nextIdx    = (idxRef.current + 1) % vids.length;
-    const preloadIdx = (nextIdx + 1) % vids.length;     // video after next
     idxRef.current   = nextIdx;
     active.current   = to;
+
+    // Reset transition flag on the incoming slot so it can trigger later
+    if (to === "a") aTriggered.current = false;
+    else            bTriggered.current = false;
 
     const incomingEl = to   === "a" ? aRef.current : bRef.current;
     const outgoingEl = from === "a" ? aRef.current : bRef.current;
@@ -121,27 +131,25 @@ export default function HeroVideo() {
     const fadeIn  = to   === "a" ? setAOp : setBOp;
     const fadeOut = from === "a" ? setAOp : setBOp;
 
-    // Bring incoming to front (if already buffered, play immediately)
+    // Play incoming if already buffered; onCanPlay will handle it otherwise
     if (incomingEl && incomingEl.readyState >= 3) {
       incomingEl.play().catch(() => {});
       fadeIn(1);
     }
-    // else: onCanPlay of the incoming slot will fire and handle it
 
-    // Fade out outgoing 800 ms after crossfade starts
-    setTimeout(() => fadeOut(0), 800);
+    // Simultaneously fade out outgoing (true crossfade over 2 s)
+    fadeOut(0);
 
-    // After transition completes, reload outgoing slot with the video after next
-    // Capture idxRef value NOW so the closure is stable
-    const capturedNext = nextIdx;
+    // After crossfade + buffer, reload outgoing slot with the video after next
     if (pendingLoad.current) clearTimeout(pendingLoad.current);
     pendingLoad.current = setTimeout(() => {
-      const preload = (capturedNext + 1) % vidsRef.current.length;
+      const preload = (idxRef.current + 1) % vidsRef.current.length;
       if (outgoingEl) {
+        outgoingEl.pause();
         outgoingEl.src = vidsRef.current[preload]?.videoUrl ?? "";
         outgoingEl.load();
       }
-    }, 1_400); // safely after 1 s opacity transition
+    }, 2_200); // safely after 2 s opacity transition
   }
 
   // ── Slot A event handlers ──────────────────────────────────────────────────
@@ -151,9 +159,25 @@ export default function HeroVideo() {
     aRef.current?.play().catch(() => {});
   }
 
-  function onAEnded() {
+  function onATimeUpdate() {
     if (active.current !== "a") return;
-    transition("a");
+    if (aTriggered.current) return;
+    const el = aRef.current;
+    if (!el || !el.duration || isNaN(el.duration)) return;
+    // Start crossfade 3 s before end (minimum 0.5 s into video to avoid instant fade)
+    if (el.currentTime > 0.5 && el.currentTime >= el.duration - 3) {
+      aTriggered.current = true;
+      transition("a");
+    }
+  }
+
+  function onAEnded() {
+    // Fallback: if timeupdate didn't fire in time (very short videos)
+    if (active.current !== "a") return;
+    if (!aTriggered.current) {
+      aTriggered.current = true;
+      transition("a");
+    }
   }
 
   // ── Slot B event handlers ──────────────────────────────────────────────────
@@ -163,9 +187,23 @@ export default function HeroVideo() {
     bRef.current?.play().catch(() => {});
   }
 
+  function onBTimeUpdate() {
+    if (active.current !== "b") return;
+    if (bTriggered.current) return;
+    const el = bRef.current;
+    if (!el || !el.duration || isNaN(el.duration)) return;
+    if (el.currentTime > 0.5 && el.currentTime >= el.duration - 3) {
+      bTriggered.current = true;
+      transition("b");
+    }
+  }
+
   function onBEnded() {
     if (active.current !== "b") return;
-    transition("b");
+    if (!bTriggered.current) {
+      bTriggered.current = true;
+      transition("b");
+    }
   }
 
   // ── Cleanup pending timeouts on unmount ───────────────────────────────────
@@ -192,10 +230,11 @@ export default function HeroVideo() {
         ref={aRef}
         aria-hidden
         className="absolute inset-0 w-full h-full object-cover hidden md:block pointer-events-none"
-        style={{ zIndex: 1, opacity: aOp, transition: "opacity 1s ease-in-out" }}
+        style={{ zIndex: 1, opacity: aOp, transition: "opacity 2s ease-in-out" }}
         muted
         playsInline
         onCanPlay={onACanPlay}
+        onTimeUpdate={onATimeUpdate}
         onEnded={onAEnded}
       />
 
@@ -204,10 +243,11 @@ export default function HeroVideo() {
         ref={bRef}
         aria-hidden
         className="absolute inset-0 w-full h-full object-cover hidden md:block pointer-events-none"
-        style={{ zIndex: 1, opacity: bOp, transition: "opacity 1s ease-in-out" }}
+        style={{ zIndex: 1, opacity: bOp, transition: "opacity 2s ease-in-out" }}
         muted
         playsInline
         onCanPlay={onBCanPlay}
+        onTimeUpdate={onBTimeUpdate}
         onEnded={onBEnded}
       />
 
