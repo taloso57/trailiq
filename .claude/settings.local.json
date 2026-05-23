@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:unsplash.com)",
+      "PowerShell($file = \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\\\\lib\\\\products.json\"; try { $stream = [System.IO.File]::Open\\($file, 'Open', 'Write', 'None'\\); $stream.Close\\(\\); \"File is not locked\" } catch { \"File is locked: $_\" })",
+      "PowerShell($file = \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\\\\lib\\\\products.json\"; $maxTries = 20; for \\($i = 0; $i -lt $maxTries; $i++\\) { try { $stream = [System.IO.File]::Open\\($file, 'Open', 'Write', 'None'\\); $stream.Close\\(\\); \"File became available after $i retries\"; break } catch { Start-Sleep -Milliseconds 200 } })",
+      "PowerShell($file = \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\\\\lib\\\\products.json\"; try { $stream = [System.IO.File]::Open\\($file, 'Open', 'Write', 'None'\\); $stream.Close\\(\\); \"Available\" } catch { \"Still locked\" })",
+      "PowerShell($path = \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\\\\lib\\\\products.json\"; try { $fs = [System.IO.File]::Open\\($path, 'Open', 'ReadWrite', 'None'\\); $fs.Close\\(\\); \"FILE IS NOT LOCKED\" } catch { \"FILE IS LOCKED: $\\($_.Exception.Message\\)\" })",
+      "PowerShell($path = \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\\\\lib\\\\products.json\"; for \\($i=1; $i -le 10; $i++\\) { try { $fs = [System.IO.File]::Open\\($path, 'Open', 'ReadWrite', 'None'\\); $fs.Close\\(\\); \"Attempt $i`: UNLOCKED\"; break } catch { \"Attempt $i`: locked\"; Start-Sleep -Milliseconds 500 } })",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Get-CimInstance *)",
+      "PowerShell(& \"$env:windir\\\\system32\\\\openfiles.exe\" /query /fo table 2>&1 | Select-String -Pattern \"products\" -SimpleMatch)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(icacls *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\" -Recurse -File | Where-Object {$_.Extension -in '.tsx', '.ts', '.css', '.config.js', '.config.ts', '.json'} | Select-Object -ExpandProperty FullName | Sort-Object)",
+      "PowerShell(cd \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\"; Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"cd 'C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq'; npm run dev\" -WindowStyle Normal; Start-Sleep -Seconds 8; Write-Host \"Dev server started\")",
+      "PowerShell(Start-Sleep -Seconds 4; try { $r = Invoke-WebRequest -Uri \"http://localhost:3000\" -TimeoutSec 10 -UseBasicParsing; Write-Host \"Status: $\\($r.StatusCode\\)\"; Write-Host \"Content length: $\\($r.Content.Length\\)\" } catch { Write-Host \"Error: $_\" })",
+      "PowerShell(cd \"C:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\"; node -e \"require\\('playwright'\\)\" 2>&1; echo \"exit: $LASTEXITCODE\")",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(npm install *)",
+      "PowerShell(Start-Sleep -Seconds 8; Invoke-WebRequest -Uri \"http://localhost:3000/api/video\" -UseBasicParsing | Select-Object -ExpandProperty Content | ConvertFrom-Json | Select-Object videoUrl, posterUrl, photographer, duration)",
+      "PowerShell(Start-Sleep -Seconds 10; Invoke-WebRequest -Uri \"http://localhost:3000/api/video\" -UseBasicParsing | Select-Object -ExpandProperty Content)",
+      "PowerShell(npm run *)",
+      "PowerShell(Start-Sleep -Seconds 15; try { $r = Invoke-WebRequest -Uri \"http://localhost:3000\" -UseBasicParsing -TimeoutSec 10; Write-Output \"Server OK: $\\($r.StatusCode\\)\" } catch { Write-Output \"Not ready yet: $_\" })",
+      "PowerShell(Receive-Job *)",
+      "PowerShell(winget *)",
+      "PowerShell(gh *)",
+      "PowerShell(git *)"
+    ]
+  }
+}
