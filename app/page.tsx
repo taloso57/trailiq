@@ -246,20 +246,7 @@ export default function HomePage() {
       {/* ── HOW IT WORKS ──────────────────────────────────────────────────── */}
       <FeatureCards />
 
-      {/* ── FOOTER ────────────────────────────────────────────────────────── */}
-      <footer className="border-t border-white/5 py-10">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="text-white/20 text-[10px] tracking-[0.2em] uppercase">{t.brand}</span>
-          <span className="text-white/15 text-[10px]">{t.tagline}</span>
-          <div className="flex gap-6 text-white/20 text-[10px] tracking-[0.12em] uppercase">
-            <Link href="/browse"  className="hover:text-white/50 transition-colors">{t.nav.browse}</Link>
-            <Link href="/compare" className="hover:text-white/50 transition-colors">{t.nav.compare}</Link>
-            <Link href="/alerts"  className="hover:text-white/50 transition-colors">
-              {lang === "he" ? "התראות" : "Alerts"}
-            </Link>
-          </div>
-        </div>
-      </footer>
+      {/* Footer is rendered globally by SiteFooter in layout.tsx */}
     </>
   );
 }

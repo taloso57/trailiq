@@ -146,6 +146,8 @@ export default function RecommendationGrid({
                       href={p.buy_url}
                       target="_blank"
                       rel="noreferrer noopener"
+                      title={lang === "he" ? "קישור שותפים — אנו עשויים להרוויח עמלה, ללא עלות נוספת עבורך" : "Affiliate link — we may earn a commission at no extra cost to you"}
+                      aria-label={`${lang === "he" ? "קנה עכשיו" : "Buy Now"} — ${p.name_english} (${lang === "he" ? "קישור שותפים" : "affiliate link"})`}
                       className="cta flex-1 py-3 text-[11px]"
                     >
                       🛒 {lang === "he" ? "קנה עכשיו" : "Buy Now"}
@@ -153,15 +155,16 @@ export default function RecommendationGrid({
                     <button
                       type="button"
                       onClick={() => (inBag ? removeItem(p.id) : addItem(p))}
+                      aria-label={inBag
+                        ? (lang === "he" ? `הסר ${p.name_english} מהתיק` : `Remove ${p.name_english} from bag`)
+                        : (lang === "he" ? `הוסף ${p.name_english} לתיק` : `Add ${p.name_english} to bag`)}
                       className={`px-3 py-3 text-[10px] border transition-all duration-200 ${
                         inBag
                           ? "border-cyan/40 text-cyan hover:bg-red-500/10 hover:text-red-400 hover:border-red-400/40"
                           : "border-white/12 text-white/40 hover:text-white hover:border-white/30"
                       }`}
                     >
-                      {inBag
-                        ? lang === "he" ? "✓" : "✓"
-                        : lang === "he" ? "🎒" : "🎒"}
+                      {inBag ? "✓" : "🎒"}
                     </button>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/lib/LanguageProvider";
 import { BagProvider } from "@/lib/BagContext";
 import Navbar from "@/components/Navbar";
 import WeightBar from "@/components/WeightBar";
+import SiteFooter from "@/components/SiteFooter";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -32,11 +33,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
       </head>
       <body className="min-h-screen bg-bg text-white antialiased">
+        {/* Skip-to-content — keyboard accessibility */}
+        <a href="#main-content" className="skip-link">
+          דלג לתוכן הראשי
+        </a>
         <LanguageProvider>
           <BagProvider>
             <Navbar />
-            <main>{children}</main>
+            <main id="main-content">{children}</main>
             <WeightBar />
+            <SiteFooter />
           </BagProvider>
         </LanguageProvider>
       </body>

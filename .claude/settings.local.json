@@ -34,7 +34,10 @@
       "PowerShell(Invoke-RestMethod -Uri \"https://trailiq-two.vercel.app/api/playlist\" -Method GET | ConvertTo-Json -Depth 3 | Select-Object -First 50)",
       "PowerShell(Invoke-RestMethod -Uri \"https://trailiq-1ur3ldd3f-trailiq.vercel.app/api/playlist\" -Method GET | ConvertTo-Json -Depth 2 | Select-Object -First 20)",
       "PowerShell(Get-Content *)",
-      "PowerShell(vercel env *)"
+      "PowerShell(vercel env *)",
+      "PowerShell(vercel ls *)",
+      "PowerShell(git push *)",
+      "PowerShell(git add *)"
     ]
   }
 }
