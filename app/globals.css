@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Accessibility widget modes ─────────────────────────────────────── */
+
+/* Large text: scale root em so all rem-based sizes grow */
+html.a11y-large-text {
+  font-size: 130% !important;
+}
+
+/* Link highlighting: underline every anchor */
+html.a11y-highlight-links a {
+  text-decoration: underline !important;
+  text-decoration-color: rgba(0, 212, 255, 0.6) !important;
+  text-underline-offset: 3px !important;
+}
+
+/* (high-contrast and grayscale are applied via inline style on <html>
+    by AccessibilityWidget.tsx so they can be combined cleanly) */
+
 /* ── Skip-to-content link — visible only on keyboard focus ── */
 .skip-link {
   position: fixed;

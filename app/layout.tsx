@@ -6,6 +6,7 @@ import { BagProvider } from "@/lib/BagContext";
 import Navbar from "@/components/Navbar";
 import WeightBar from "@/components/WeightBar";
 import SiteFooter from "@/components/SiteFooter";
+import AccessibilityWidget from "@/components/AccessibilityWidget";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <main id="main-content">{children}</main>
             <WeightBar />
             <SiteFooter />
+            <AccessibilityWidget />
           </BagProvider>
         </LanguageProvider>
       </body>
