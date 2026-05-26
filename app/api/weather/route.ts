@@ -69,13 +69,7 @@ export async function GET(req: Request) {
 
   const apiKey = process.env.OPENWEATHER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({
-      error: "Weather API not configured",
-      debug: {
-        keyPresent: false,
-        envKeys: Object.keys(process.env).filter(k => k.startsWith("OPEN") || k.startsWith("PEXELS")),
-      }
-    }, { status: 503 });
+    return NextResponse.json({ error: "Weather API not configured" }, { status: 503 });
   }
 
   const city = DEST_TO_CITY[destination];
@@ -89,10 +83,7 @@ export async function GET(req: Request) {
       `?q=${encodeURIComponent(city)}&units=metric&cnt=16&appid=${apiKey}`;
 
     const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) {
-      const errBody = await res.text().catch(() => "");
-      throw new Error(`OWM HTTP ${res.status}: ${errBody.slice(0, 200)}`);
-    }
+    if (!res.ok) throw new Error(`OWM HTTP ${res.status}`);
 
     const data = await res.json();
     const list: any[] = data.list ?? [];
@@ -123,8 +114,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(weather);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[weather] fetch error:", msg);
-    return NextResponse.json({ error: "Weather unavailable", debug: msg }, { status: 503 });
+    console.error("[weather] fetch error:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Weather unavailable" }, { status: 503 });
   }
 }
