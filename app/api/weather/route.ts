@@ -89,7 +89,10 @@ export async function GET(req: Request) {
       `?q=${encodeURIComponent(city)}&units=metric&cnt=16&appid=${apiKey}`;
 
     const res = await fetch(url, { next: { revalidate: 3600 } });
-    if (!res.ok) throw new Error(`OWM HTTP ${res.status}`);
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      throw new Error(`OWM HTTP ${res.status}: ${errBody.slice(0, 200)}`);
+    }
 
     const data = await res.json();
     const list: any[] = data.list ?? [];
@@ -120,7 +123,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json(weather);
   } catch (err) {
-    console.error("[weather] fetch error:", err);
-    return NextResponse.json({ error: "Weather unavailable" }, { status: 503 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[weather] fetch error:", msg);
+    return NextResponse.json({ error: "Weather unavailable", debug: msg }, { status: 503 });
   }
 }
