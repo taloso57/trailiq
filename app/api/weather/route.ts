@@ -69,7 +69,13 @@ export async function GET(req: Request) {
 
   const apiKey = process.env.OPENWEATHER_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ error: "Weather API not configured" }, { status: 503 });
+    return NextResponse.json({
+      error: "Weather API not configured",
+      debug: {
+        keyPresent: false,
+        envKeys: Object.keys(process.env).filter(k => k.startsWith("OPEN") || k.startsWith("PEXELS")),
+      }
+    }, { status: 503 });
   }
 
   const city = DEST_TO_CITY[destination];
