@@ -15,6 +15,18 @@ interface Recommendation {
   reason_english: string;
 }
 
+export interface WeatherData {
+  city: string;
+  day_high_c: number;
+  night_low_c: number;
+  humidity: number;
+  rain_probability: number;
+  wind_speed_kmh: number;
+  description: string;
+  description_he: string;
+  icon: string;
+}
+
 const CAT_COLOR: Record<Category, string> = {
   backpack:     "#0EA5E9",
   sleeping_bag: "#A855F7",
@@ -36,11 +48,13 @@ export default function RecommendationGrid({
   recommendations,
   summaryHe = "",
   summaryEn = "",
+  weather,
 }: {
   products: Product[];
   recommendations: Recommendation[];
   summaryHe?: string;
   summaryEn?: string;
+  weather?: WeatherData | null;
 }) {
   const { lang } = useLang();
   const { addItem, removeItem, hasItem } = useBag();
@@ -172,6 +186,63 @@ export default function RecommendationGrid({
             );
           })}
         </div>
+
+        {/* Weather strip — shown only when live weather data is available */}
+        {weather && (
+          <div className="bg-black border border-cyan/10 px-6 py-4 flex flex-wrap items-center gap-6">
+            <div className="flex items-center gap-3">
+              {/* OWM icon */}
+              <img
+                src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                alt={weather.description}
+                width={40}
+                height={40}
+                className="opacity-90"
+              />
+              <div>
+                <div className="text-[10px] uppercase tracking-[0.14em] text-cyan/70 font-semibold mb-0.5">
+                  {lang === "he" ? `מזג אוויר — ${weather.city}` : `Weather — ${weather.city}`}
+                </div>
+                <div className="text-white/60 text-xs">
+                  {lang === "he" ? weather.description_he : weather.description}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-5 text-sm flex-wrap">
+              <div className="text-center">
+                <div className="text-[10px] text-white/25 uppercase tracking-wide mb-0.5">
+                  {lang === "he" ? "יום" : "Day"}
+                </div>
+                <div className="text-white font-bold">{weather.day_high_c}°C</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-white/25 uppercase tracking-wide mb-0.5">
+                  {lang === "he" ? "לילה" : "Night"}
+                </div>
+                <div className="text-white font-bold">{weather.night_low_c}°C</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-white/25 uppercase tracking-wide mb-0.5">
+                  {lang === "he" ? "לחות" : "Humidity"}
+                </div>
+                <div className="text-white font-bold">{weather.humidity}%</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-white/25 uppercase tracking-wide mb-0.5">
+                  {lang === "he" ? "גשם" : "Rain"}
+                </div>
+                <div className="text-white font-bold">{weather.rain_probability}%</div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-white/25 uppercase tracking-wide mb-0.5">
+                  {lang === "he" ? "רוח" : "Wind"}
+                </div>
+                <div className="text-white font-bold">{weather.wind_speed_kmh} <span className="text-white/30 text-[9px]">km/h</span></div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Summary strip */}
         <div className="bg-black border border-white/6 px-6 py-5 flex flex-wrap items-center justify-between gap-4">

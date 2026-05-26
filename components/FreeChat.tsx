@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/lib/LanguageProvider";
 import type { Product } from "@/lib/products";
-import RecommendationGrid from "./RecommendationGrid";
+import RecommendationGrid, { type WeatherData } from "./RecommendationGrid";
 
 interface Recommendation {
   product_id: string;
@@ -17,6 +17,7 @@ interface ChatResponse {
   recommendations: Recommendation[];
   summary_hebrew: string;
   summary_english: string;
+  weather?: WeatherData | null;
 }
 
 export default function FreeChat({
@@ -155,6 +156,7 @@ export default function FreeChat({
                 recommendations={result.recommendations}
                 summaryHe={result.summary_hebrew}
                 summaryEn={result.summary_english}
+                weather={result.weather}
               />
           </motion.div>
         )}

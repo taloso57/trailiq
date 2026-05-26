@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/lib/LanguageProvider";
-import RecommendationGrid from "./RecommendationGrid";
+import RecommendationGrid, { type WeatherData } from "./RecommendationGrid";
 import type { Product } from "@/lib/products";
 
 interface Recommendation {
@@ -17,7 +17,22 @@ interface ChatResponse {
   recommendations: Recommendation[];
   summary_hebrew: string;
   summary_english: string;
+  weather?: WeatherData | null;
 }
+
+// Maps questionnaire option labels → weather API destination keys
+const DEST_LABEL_TO_KEY: Record<string, string> = {
+  "ישראל":        "israel",
+  "Israel":       "israel",
+  "אירופה":       "alps",
+  "Europe":       "alps",
+  "דרום אמריקה": "patagonia",
+  "South America":"patagonia",
+  "אסיה":         "nepal",
+  "Asia":         "nepal",
+  "אפריקה":       "kilimanjaro",
+  "Africa":       "kilimanjaro",
+};
 
 type Answers = Record<string, string | string[]>;
 type QuestionKind = "single" | "multi" | "freetext";
@@ -154,6 +169,8 @@ export default function GuidedQuestionnaire({ onBack }: { onBack: () => void }) 
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ChatResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [weatherPreview, setWeatherPreview] = useState<WeatherData | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
 
   const current = QUESTIONS[step];
   const isLast = step === QUESTIONS.length - 1;
@@ -166,6 +183,20 @@ export default function GuidedQuestionnaire({ onBack }: { onBack: () => void }) 
   const climateHint = dest
     ? (lang === "he" ? DEST_CLIMATE_HE[dest] : DEST_CLIMATE_EN[dest])
     : null;
+
+  async function fetchWeatherForDest(destLabel: string) {
+    const destKey = DEST_LABEL_TO_KEY[destLabel];
+    if (!destKey) return;
+    setWeatherLoading(true);
+    try {
+      const res = await fetch(`/api/weather?destination=${encodeURIComponent(destKey)}`);
+      if (res.ok) setWeatherPreview(await res.json());
+    } catch {
+      // silent — weather is optional
+    } finally {
+      setWeatherLoading(false);
+    }
+  }
 
   async function doSubmit(finalAnswers: Answers) {
     const msg = buildMessage(finalAnswers, lang);
@@ -198,6 +229,10 @@ export default function GuidedQuestionnaire({ onBack }: { onBack: () => void }) 
     }
     const newAnswers = { ...answers, [current.key]: option };
     setAnswers(newAnswers);
+    // After destination selection, kick off a background weather fetch
+    if (current.key === "destination") {
+      fetchWeatherForDest(option);
+    }
     if (isLast) {
       setTimeout(() => doSubmit(newAnswers), 180);
     } else {
@@ -246,6 +281,7 @@ export default function GuidedQuestionnaire({ onBack }: { onBack: () => void }) 
           recommendations={result.recommendations}
           summaryHe={result.summary_hebrew}
           summaryEn={result.summary_english}
+          weather={result.weather}
         />
       </div>
     );
@@ -291,16 +327,55 @@ export default function GuidedQuestionnaire({ onBack }: { onBack: () => void }) 
         >
           <h2 className="text-2xl font-bold text-white mb-2">{question}</h2>
 
-          {/* Climate note on season question */}
-          {current.climateNote && dest && climateHint && (
-            <p className="text-cyan/80 text-xs mb-5 flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" /><path d="M12 16v-4m0-4h.01" />
-              </svg>
-              {lang === "he"
-                ? `מנתח מזג אוויר לפי היעד שבחרת — ${climateHint}`
-                : `Climate for ${dest}: ${climateHint}`}
-            </p>
+          {/* Climate / weather note on season question */}
+          {current.climateNote && dest && (
+            <div className="mb-5">
+              {weatherLoading && (
+                <p className="text-cyan/60 text-xs flex items-center gap-1.5">
+                  <span className="inline-block w-3 h-3 border border-cyan/40 border-t-cyan rounded-full animate-spin" />
+                  {lang === "he" ? "טוען מזג אוויר..." : "Loading weather..."}
+                </p>
+              )}
+
+              {!weatherLoading && weatherPreview && (
+                <div className="flex flex-wrap items-center gap-4 bg-cyan/5 border border-cyan/15 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={`https://openweathermap.org/img/wn/${weatherPreview.icon}.png`}
+                      alt={weatherPreview.description}
+                      width={32}
+                      height={32}
+                      className="opacity-90"
+                    />
+                    <div>
+                      <div className="text-[10px] text-cyan/70 uppercase tracking-wide font-semibold">
+                        {lang === "he" ? weatherPreview.city : weatherPreview.city}
+                      </div>
+                      <div className="text-white/60 text-xs">
+                        {lang === "he" ? weatherPreview.description_he : weatherPreview.description}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 text-xs text-white/70">
+                    <span>🌡 <strong className="text-white">{weatherPreview.day_high_c}°C</strong> / {weatherPreview.night_low_c}°C</span>
+                    <span>💧 {weatherPreview.humidity}%</span>
+                    <span>🌧 {weatherPreview.rain_probability}%</span>
+                    <span>💨 {weatherPreview.wind_speed_kmh} km/h</span>
+                  </div>
+                </div>
+              )}
+
+              {!weatherLoading && !weatherPreview && climateHint && (
+                <p className="text-cyan/80 text-xs flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" /><path d="M12 16v-4m0-4h.01" />
+                  </svg>
+                  {lang === "he"
+                    ? `מנתח מזג אוויר לפי היעד שבחרת — ${climateHint}`
+                    : `Climate for ${dest}: ${climateHint}`}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Button options (single or multi) */}
