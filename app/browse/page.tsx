@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { useLang } from "@/lib/LanguageProvider";
-import { products, usdToIls, type Product, type Category } from "@/lib/products";
+import { products, type Product, type Category } from "@/lib/products";
+import { useUsdToIls } from "@/lib/ExchangeRateContext";
 import { useBag } from "@/lib/BagContext";
 import PriceAlertModal from "@/components/PriceAlertModal";
 
@@ -37,6 +38,7 @@ const CAT_LABEL: Record<Category, { he: string; en: string }> = {
 export default function BrowsePage() {
   const { lang } = useLang();
   const { addItem, removeItem, hasItem } = useBag();
+  const usdToIls = useUsdToIls();
   const [catFilter, setCatFilter] = useState<CatFilter>("all");
   const [sortBy, setSortBy] = useState<"rating" | "price" | "weight">("rating");
   const [alertProduct, setAlertProduct] = useState<Product | null>(null);

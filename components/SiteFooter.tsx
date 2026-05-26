@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useLang } from "@/lib/LanguageProvider";
+import { useExchangeRate } from "@/lib/ExchangeRateContext";
 
 /** SVG social icons — minimal, inline, aria-labelled */
 function IconInstagram() {
@@ -30,6 +31,7 @@ function IconGitHub() {
 
 export default function SiteFooter() {
   const { t, lang } = useLang();
+  const { rate } = useExchangeRate();
 
   return (
     <footer className="bg-black border-t border-white/5" aria-label="Footer">
@@ -106,11 +108,16 @@ export default function SiteFooter() {
 
         </div>
 
-        {/* ── Bottom bar: copyright + social ── */}
+        {/* ── Bottom bar: copyright + rate + social ── */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/5">
-          <p className="text-white/15 text-[10px] tracking-wide" dir="rtl">
-            © 2026 TrailIQ. כל הזכויות שמורות.
-          </p>
+          <div className="flex items-center gap-5" dir="rtl">
+            <p className="text-white/15 text-[10px] tracking-wide">
+              © 2026 TrailIQ. כל הזכויות שמורות.
+            </p>
+            <span className="text-white/12 text-[10px] tracking-wide">
+              שער דולר: ₪{rate.toFixed(2)}
+            </span>
+          </div>
 
           {/* Social icons */}
           <div className="flex items-center gap-5">

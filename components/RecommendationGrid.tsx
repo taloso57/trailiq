@@ -4,7 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useLang } from "@/lib/LanguageProvider";
-import { type Category, type Product, usdToIls } from "@/lib/products";
+import { type Category, type Product } from "@/lib/products";
+import { useUsdToIls } from "@/lib/ExchangeRateContext";
 import { useBag } from "@/lib/BagContext";
 import PriceAlertModal from "./PriceAlertModal";
 import PackingList from "./PackingList";
@@ -58,6 +59,7 @@ export default function RecommendationGrid({
 }) {
   const { lang } = useLang();
   const { addItem, removeItem, hasItem } = useBag();
+  const usdToIls = useUsdToIls();
   const [alertProduct, setAlertProduct] = useState<Product | null>(null);
   const [showPackingList, setShowPackingList] = useState(false);
 

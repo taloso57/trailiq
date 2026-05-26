@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { Product } from "@/lib/products";
-import { usdToIls } from "@/lib/products";
+import { useUsdToIls } from "@/lib/ExchangeRateContext";
 
 interface Recommendation {
   product_id: string;
@@ -74,6 +74,7 @@ const GENERAL_CHECKLIST = [
 ];
 
 export default function PackingList({ products, summaryHe, onClose }: Props) {
+  const usdToIls = useUsdToIls();
   // Checkbox state for recommended products
   const [checkedProducts, setCheckedProducts] = useState<Set<string>>(new Set());
   // Checkbox state for general items (key = "sectionIdx-itemIdx")

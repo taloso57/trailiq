@@ -3,7 +3,8 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLang } from "@/lib/LanguageProvider";
-import { products, usdToIls, type Product, type Category } from "@/lib/products";
+import { products, type Product, type Category } from "@/lib/products";
+import { useUsdToIls } from "@/lib/ExchangeRateContext";
 
 type CatFilter = Category | "all";
 
@@ -100,6 +101,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export default function ProductComparison({ onBack }: { onBack: () => void }) {
   const { lang } = useLang();
+  const usdToIls = useUsdToIls();
 
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
   const [catFilter, setCatFilter]         = useState<CatFilter>("all");

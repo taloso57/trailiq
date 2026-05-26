@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useBag } from "@/lib/BagContext";
-import { usdToIls } from "@/lib/products";
 import type { Category } from "@/lib/products";
+import { useUsdToIls } from "@/lib/ExchangeRateContext";
 
 const CAT_HE: Record<Category, string> = {
   backpack:     "תיק",
@@ -16,6 +16,7 @@ const CAT_HE: Record<Category, string> = {
 
 export default function WeightBar() {
   const { items, removeItem, clearBag, totalWeight, totalCostUsd } = useBag();
+  const usdToIls = useUsdToIls();
   const [expanded, setExpanded] = useState(false);
 
   if (items.length === 0) return null;

@@ -28,5 +28,6 @@ export function getProductById(id: string): Product | undefined {
   return products.find((p) => p.id === id);
 }
 
-export const ILS_PER_USD = 3.7;
-export const usdToIls = (usd: number) => Math.round(usd * ILS_PER_USD);
+/** Static fallback rate — components should prefer useUsdToIls() from ExchangeRateContext */
+export const ILS_PER_USD = 3.76;
+export const usdToIls = (usd: number, rate = ILS_PER_USD) => Math.round(usd * rate);

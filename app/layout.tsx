@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/LanguageProvider";
 import { BagProvider } from "@/lib/BagContext";
+import { ExchangeRateProvider } from "@/lib/ExchangeRateContext";
 import Navbar from "@/components/Navbar";
 import WeightBar from "@/components/WeightBar";
 import SiteFooter from "@/components/SiteFooter";
@@ -39,13 +40,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           דלג לתוכן הראשי
         </a>
         <LanguageProvider>
-          <BagProvider>
-            <Navbar />
-            <main id="main-content">{children}</main>
-            <WeightBar />
-            <SiteFooter />
-            <AccessibilityWidget />
-          </BagProvider>
+          <ExchangeRateProvider>
+            <BagProvider>
+              <Navbar />
+              <main id="main-content">{children}</main>
+              <WeightBar />
+              <SiteFooter />
+              <AccessibilityWidget />
+            </BagProvider>
+          </ExchangeRateProvider>
         </LanguageProvider>
       </body>
     </html>

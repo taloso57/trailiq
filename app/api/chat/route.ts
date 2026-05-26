@@ -132,7 +132,7 @@ function extractBudget(msg: string): number | null {
   if (usdWord) return parseInt(usdWord[1].replace(/,/g, ""));
 
   const ils = msg.match(/(\d[\d,]*)\s*(?:₪|ils|שקל|ש"ח|שח)/i);
-  if (ils) return Math.round(parseInt(ils[1].replace(/,/g, "")) / 3.7);
+  if (ils) return Math.round(parseInt(ils[1].replace(/,/g, "")) / 3.76);
 
   return null;
 }
