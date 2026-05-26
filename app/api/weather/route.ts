@@ -28,20 +28,6 @@ const DEST_TO_CITY: Record<string, string> = {
   "japan":              "Tokyo,JP",
 };
 
-// Maps broad questionnaire region names → a representative destination key
-export const QUESTIONNAIRE_DEST_MAP: Record<string, string> = {
-  "ישראל":        "israel",
-  "Israel":       "israel",
-  "אירופה":       "alps",
-  "Europe":       "alps",
-  "דרום אמריקה": "patagonia",
-  "South America":"patagonia",
-  "אסיה":         "nepal",
-  "Asia":         "nepal",
-  "אפריקה":       "kilimanjaro",
-  "Africa":       "kilimanjaro",
-};
-
 const WEATHER_DESC_MAP: Record<string, string> = {
   "clear sky":             "שמים בהירים",
   "few clouds":            "מעט עננים",
