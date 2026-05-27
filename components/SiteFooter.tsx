@@ -115,7 +115,7 @@ export default function SiteFooter() {
               © 2026 TrailIQ. כל הזכויות שמורות.
             </p>
             <span className="text-white/12 text-[10px] tracking-wide">
-              שער דולר: ₪{rate.toFixed(2)}
+              שער יציג: ₪{rate.toFixed(2)}
             </span>
           </div>
 
