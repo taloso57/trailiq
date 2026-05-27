@@ -38,6 +38,7 @@ export default function Navbar() {
     { href: "/",       label: t.nav.home },
     { href: "/browse", label: t.nav.browse },
     { href: "/compare",label: t.nav.compare },
+    { href: "/about",  label: t.nav.about },
   ];
 
   return (

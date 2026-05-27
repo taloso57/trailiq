@@ -72,6 +72,7 @@ export default function SiteFooter() {
               <Link href="/alerts"  className="hover:text-white/70 transition-colors">
                 {lang === "he" ? "התראות" : "Alerts"}
               </Link>
+              <Link href="/about"   className="hover:text-white/70 transition-colors">{t.nav.about}</Link>
             </nav>
           </div>
 
