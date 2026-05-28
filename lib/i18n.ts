@@ -3,7 +3,7 @@ export type Lang = "he" | "en";
 interface Dict {
   brand: string;
   tagline: string;
-  nav: { home: string; browse: string; compare: string; about: string };
+  nav: { home: string; browse: string; compare: string; about: string; blog: string };
   hero: { title: string; subtitle: string; chatPlaceholder: string; send: string };
   features: { title: string; items: { title: string; body: string }[] };
   destinations: {
@@ -49,6 +49,7 @@ export const translations: Record<Lang, Dict> = {
       browse: "קטגוריות",
       compare: "השוואה",
       about: "אודות",
+      blog: "בלוג",
     },
     hero: {
       title: "תכנן את ההרפתקה הבאה שלך",
@@ -116,6 +117,7 @@ export const translations: Record<Lang, Dict> = {
       browse: "Browse",
       compare: "Compare",
       about: "About",
+      blog: "Blog",
     },
     hero: {
       title: "Plan your next adventure",

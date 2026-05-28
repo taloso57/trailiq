@@ -37,7 +37,8 @@
       "PowerShell(vercel env *)",
       "PowerShell(vercel ls *)",
       "PowerShell(git push *)",
-      "PowerShell(git add *)"
+      "PowerShell(git add *)",
+      "PowerShell(Get-Command *)"
     ]
   }
 }
