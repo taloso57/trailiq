@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import type { MutableRefObject } from "react";
+import * as THREE from "three";
 
-/* ── Destination list (51 unique destinations) ─────────────────── */
+/* ── Destinations ───────────────────────────────────────────────── */
 interface Dest { name: string; lat: number; lon: number; }
 
 const DEST: Dest[] = [
@@ -60,30 +61,11 @@ const DEST: Dest[] = [
   { name: 'הר טובקל מרוקו',            lat:  31.1, lon:  -7.9 },
 ];
 
-/* ── CDN loader (idempotent) ───────────────────────────────────── */
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if ((window as any).THREE) { resolve(); return; }
-    const existing = document.querySelector(`script[src="${src}"]`);
-    if (existing) {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      return;
-    }
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error(`Globe3D: failed to load ${src}`));
-    document.head.appendChild(s);
-  });
-}
-
 /* ── Component ─────────────────────────────────────────────────── */
 export default function Globe3D({ onSelect }: { onSelect: (q: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef   = useRef<HTMLDivElement>(null);
   const onSelectRef  = useRef(onSelect);
-  const destroyRef   = useRef<(() => void) | null>(null);
 
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
 
@@ -91,26 +73,13 @@ export default function Globe3D({ onSelect }: { onSelect: (q: string) => void })
     const container = containerRef.current;
     const tooltip   = tooltipRef.current;
     if (!container || !tooltip) return;
-    let alive = true;
-
-    loadScript("https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js")
-      .then(() => {
-        if (!alive) return;
-        destroyRef.current = buildGlobe(container, tooltip, onSelectRef);
-      })
-      .catch(console.error);
-
-    return () => {
-      alive = false;
-      destroyRef.current?.();
-      destroyRef.current = null;
-    };
+    return buildGlobe(container, tooltip, onSelectRef);
   }, []);
 
   return (
     <div className="relative w-full h-full">
       <div ref={containerRef} className="w-full h-full" />
-      {/* Tooltip — fixed so it escapes overflow:hidden on the card */}
+      {/* Fixed tooltip — escapes overflow:hidden on the card wrapper */}
       <div
         ref={tooltipRef}
         style={{
@@ -134,25 +103,23 @@ export default function Globe3D({ onSelect }: { onSelect: (q: string) => void })
   );
 }
 
-/* ── Globe builder — returns cleanup fn ───────────────────────── */
+/* ── Lat/lon helpers ────────────────────────────────────────────── */
+function ll2v(lat: number, lon: number, r: number): THREE.Vector3 {
+  const phi = (90 - lat) * Math.PI / 180;
+  const th  = (lon + 180) * Math.PI / 180;
+  return new THREE.Vector3(
+    -r * Math.sin(phi) * Math.cos(th),
+     r * Math.cos(phi),
+     r * Math.sin(phi) * Math.sin(th)
+  );
+}
+
+/* ── Globe initialiser — returns cleanup ────────────────────────── */
 function buildGlobe(
   container: HTMLDivElement,
   tooltipEl: HTMLDivElement,
   onSelectRef: MutableRefObject<(q: string) => void>
 ): () => void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const THREE = (window as any).THREE;
-
-  /* lat/lon → sphere surface position */
-  function ll2v(lat: number, lon: number, r: number) {
-    const phi = (90 - lat) * Math.PI / 180;
-    const th  = (lon + 180) * Math.PI / 180;
-    return new THREE.Vector3(
-      -r * Math.sin(phi) * Math.cos(th),
-       r * Math.cos(phi),
-       r * Math.sin(phi) * Math.sin(th)
-    );
-  }
 
   /* renderer */
   const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -160,15 +127,13 @@ function buildGlobe(
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setClearColor(0x000008, 1);
   container.appendChild(renderer.domElement);
-  const canvas = renderer.domElement as HTMLCanvasElement;
+  const canvas = renderer.domElement;
   canvas.style.cursor = "grab";
 
   /* scene + camera */
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(
-    45,
-    container.clientWidth / container.clientHeight,
-    0.1, 600
+    45, container.clientWidth / container.clientHeight, 0.1, 600
   );
   camera.position.z = 4.5;
 
@@ -194,21 +159,17 @@ function buildGlobe(
   const R = 2;
 
   /* mutable state */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let clouds: any    = null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let hovered: any   = null;
-  let autoRot        = true;
-  let isDragging     = false;
+  let clouds:    THREE.Mesh | null = null;
+  let hovered:   { dot: THREE.Mesh; halo: THREE.Mesh; dest: Dest; phase: number } | null = null;
+  let autoRot    = true;
+  let isDragging = false;
   let prevX = 0, prevY = 0;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const markers: any[]  = [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let dotMeshes: any[]  = [];
+  const markers: Array<{ dot: THREE.Mesh; halo: THREE.Mesh; dest: Dest; phase: number }> = [];
+  let dotMeshes: THREE.Mesh[] = [];
   const VHOV = new THREE.Vector3(2.4, 2.4, 2.4);
   const VNRM = new THREE.Vector3(1.0, 1.0, 1.0);
 
-  /* GLSL */
+  /* GLSL shaders */
   const DAY_NIGHT_VERT = `
     varying vec2 vUv; varying vec3 vNormal;
     void main() {
@@ -238,13 +199,18 @@ function buildGlobe(
   const loader = new THREE.TextureLoader();
   loader.crossOrigin = "anonymous";
   let pending = 3;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let texDay: any = null, texNight: any = null, texCloud: any = null;
+  let texDay: THREE.Texture | null = null;
+  let texNight: THREE.Texture | null = null;
+  let texCloud: THREE.Texture | null = null;
 
   function checkReady() { if (--pending === 0) buildEarth(); }
-  loader.load(BASE + "earth-blue-marble.jpg", (t: any) => { texDay   = t; checkReady(); }, undefined, () => checkReady());
-  loader.load(BASE + "earth-night.jpg",        (t: any) => { texNight = t; checkReady(); }, undefined, () => checkReady());
-  loader.load(BASE + "earth-clouds.png",        (t: any) => { texCloud = t; checkReady(); }, undefined, () => checkReady());
+
+  loader.load(BASE + "earth-blue-marble.jpg",
+    (t) => { texDay   = t; checkReady(); }, undefined, () => checkReady());
+  loader.load(BASE + "earth-night.jpg",
+    (t) => { texNight = t; checkReady(); }, undefined, () => checkReady());
+  loader.load(BASE + "earth-clouds.png",
+    (t) => { texCloud = t; checkReady(); }, undefined, () => checkReady());
 
   function buildEarth() {
     /* earth sphere */
@@ -255,7 +221,7 @@ function buildGlobe(
             nightMap: { value: texNight },
             sunDir:   { value: SUN },
           },
-          vertexShader: DAY_NIGHT_VERT,
+          vertexShader:   DAY_NIGHT_VERT,
           fragmentShader: DAY_NIGHT_FRAG,
         })
       : texDay
@@ -333,57 +299,50 @@ function buildGlobe(
   }
 
   /* ── Mouse interaction ─────────────────────────────────────────── */
-  function handleMouseDown(e: MouseEvent) {
-    isDragging = true;
-    autoRot    = false;
-    prevX = e.clientX;
-    prevY = e.clientY;
+  function onMouseDown(e: MouseEvent) {
+    isDragging = true; autoRot = false;
+    prevX = e.clientX; prevY = e.clientY;
     canvas.style.cursor = "grabbing";
   }
-  function handleMouseUp() {
+  function onMouseUp() {
     if (!isDragging) return;
-    isDragging = false;
-    autoRot    = true;
+    isDragging = false; autoRot = true;
     canvas.style.cursor = hovered ? "pointer" : "grab";
   }
-  function handleGlobalMouseMove(e: MouseEvent) {
+  function onMouseMoveGlobal(e: MouseEvent) {
     if (!isDragging) return;
-    const dx = e.clientX - prevX;
-    const dy = e.clientY - prevY;
-    globeGroup.rotation.y += dx * 0.005;
-    globeGroup.rotation.x += dy * 0.005;
+    globeGroup.rotation.y += (e.clientX - prevX) * 0.005;
+    globeGroup.rotation.x += (e.clientY - prevY) * 0.005;
     globeGroup.rotation.x = Math.max(-1.35, Math.min(1.35, globeGroup.rotation.x));
-    prevX = e.clientX;
-    prevY = e.clientY;
+    prevX = e.clientX; prevY = e.clientY;
   }
-  function handleWheel(e: WheelEvent) {
+  function onWheel(e: WheelEvent) {
     e.preventDefault();
-    camera.position.z += e.deltaY * 0.005;
-    camera.position.z = Math.max(2.6, Math.min(9, camera.position.z));
+    camera.position.z = Math.max(2.6, Math.min(9, camera.position.z + e.deltaY * 0.005));
   }
 
-  canvas.addEventListener("mousedown", handleMouseDown);
-  window.addEventListener("mouseup",   handleMouseUp);
-  window.addEventListener("mousemove", handleGlobalMouseMove);
-  canvas.addEventListener("wheel",     handleWheel, { passive: false });
+  canvas.addEventListener("mousedown", onMouseDown);
+  window.addEventListener("mouseup",   onMouseUp);
+  window.addEventListener("mousemove", onMouseMoveGlobal);
+  canvas.addEventListener("wheel",     onWheel, { passive: false });
 
   /* ── Raycasting + tooltip ──────────────────────────────────────── */
   const raycaster = new THREE.Raycaster();
   const mouse2    = new THREE.Vector2();
 
-  function showTooltip(name: string) {
+  function showTip(name: string) {
     tooltipEl.innerHTML =
       `<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px;direction:rtl">${name}</div>` +
       `<div style="font-size:11px;color:#00D4FF;font-weight:500;letter-spacing:0.06em;direction:rtl">לחץ לחפש ציוד</div>`;
-    tooltipEl.style.opacity  = "1";
+    tooltipEl.style.opacity   = "1";
     tooltipEl.style.transform = "translateY(0) scale(1)";
   }
-  function hideTooltip() {
-    tooltipEl.style.opacity  = "0";
+  function hideTip() {
+    tooltipEl.style.opacity   = "0";
     tooltipEl.style.transform = "translateY(6px) scale(0.97)";
   }
 
-  function handleCanvasMouseMove(e: MouseEvent) {
+  function onMouseMoveCanvas(e: MouseEvent) {
     if (isDragging || dotMeshes.length === 0) return;
     const rect = canvas.getBoundingClientRect();
     mouse2.set(
@@ -394,33 +353,36 @@ function buildGlobe(
     const hits = raycaster.intersectObjects(dotMeshes);
 
     if (hits.length > 0) {
-      const found = markers.find(m => m.dot === hits[0].object);
+      const found = markers.find(m => m.dot === hits[0].object) ?? null;
       if (found && found !== hovered) {
         hovered = found;
-        showTooltip(found.dest.name);
+        showTip(found.dest.name);
         canvas.style.cursor = "pointer";
       }
-      tooltipEl.style.left = (e.clientX + 16) + "px";
-      tooltipEl.style.top  = (e.clientY - 12) + "px";
+      if (found) {
+        tooltipEl.style.left = (e.clientX + 16) + "px";
+        tooltipEl.style.top  = (e.clientY - 12) + "px";
+      }
     } else if (hovered) {
       hovered = null;
-      hideTooltip();
+      hideTip();
       canvas.style.cursor = "grab";
     }
   }
 
-  function handleClick() {
+  function onClick() {
     if (!hovered) return;
     onSelectRef.current(`ציוד ל${hovered.dest.name}`);
   }
 
-  canvas.addEventListener("mousemove", handleCanvasMouseMove);
-  canvas.addEventListener("click",     handleClick);
+  canvas.addEventListener("mousemove", onMouseMoveCanvas);
+  canvas.addEventListener("click",     onClick);
 
   /* ── Resize observer ───────────────────────────────────────────── */
   const ro = new ResizeObserver(() => {
     const w = container.clientWidth;
     const h = container.clientHeight;
+    if (w === 0 || h === 0) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -442,9 +404,11 @@ function buildGlobe(
       const m = markers[k];
       const pulse = 1 + 0.85 * Math.abs(Math.sin(t * 1.5 + m.phase));
       m.halo.scale.setScalar(pulse);
-      m.halo.material.opacity = 0.28 / pulse;
+      (m.halo.material as THREE.MeshBasicMaterial).opacity = 0.28 / pulse;
       m.dot.scale.lerp(m === hovered ? VHOV : VNRM, 0.14);
-      m.dot.material.color.setHex(m === hovered ? 0xffffff : 0x00E5FF);
+      (m.dot.material as THREE.MeshBasicMaterial).color.setHex(
+        m === hovered ? 0xffffff : 0x00E5FF
+      );
     }
 
     renderer.render(scene, camera);
@@ -454,15 +418,15 @@ function buildGlobe(
   /* ── Cleanup ───────────────────────────────────────────────────── */
   return () => {
     cancelAnimationFrame(rafId);
-    canvas.removeEventListener("mousedown", handleMouseDown);
-    window.removeEventListener("mouseup",   handleMouseUp);
-    window.removeEventListener("mousemove", handleGlobalMouseMove);
-    canvas.removeEventListener("wheel",     handleWheel);
-    canvas.removeEventListener("mousemove", handleCanvasMouseMove);
-    canvas.removeEventListener("click",     handleClick);
+    canvas.removeEventListener("mousedown", onMouseDown);
+    window.removeEventListener("mouseup",   onMouseUp);
+    window.removeEventListener("mousemove", onMouseMoveGlobal);
+    canvas.removeEventListener("wheel",     onWheel);
+    canvas.removeEventListener("mousemove", onMouseMoveCanvas);
+    canvas.removeEventListener("click",     onClick);
     ro.disconnect();
     renderer.dispose();
-    hideTooltip();
+    hideTip();
     if (container.contains(canvas)) container.removeChild(canvas);
   };
 }
