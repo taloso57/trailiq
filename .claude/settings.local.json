@@ -38,7 +38,8 @@
       "PowerShell(vercel ls *)",
       "PowerShell(git push *)",
       "PowerShell(git add *)",
-      "PowerShell(Get-Command *)"
+      "PowerShell(Get-Command *)",
+      "PowerShell(Start-Process \"c:\\\\Users\\\\97252\\\\Desktop\\\\trailiq\\\\index.html\")"
     ]
   }
 }

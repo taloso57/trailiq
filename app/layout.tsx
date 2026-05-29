@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/LanguageProvider";
 import { BagProvider } from "@/lib/BagContext";

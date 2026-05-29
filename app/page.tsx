@@ -9,7 +9,7 @@ import ChatSection from "@/components/ChatSection";
 import FeatureCards from "@/components/FeatureCards";
 import HeroVideo from "@/components/HeroVideo";
 
-const WorldMap = dynamic(() => import("@/components/WorldMap"), {
+const Globe3D = dynamic(() => import("@/components/Globe3D"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full grid place-items-center text-white/20">
@@ -174,7 +174,7 @@ export default function HomePage() {
                     background: "#080808",
                   }}
                 >
-                  <WorldMap onSelect={(query) => setMapQuery(query)} />
+                  <Globe3D onSelect={(query) => setMapQuery(query)} />
                 </div>
 
                 {/* Label strip along the bottom edge */}
