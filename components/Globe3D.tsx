@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import * as THREE from "three";
 
@@ -66,6 +66,7 @@ export default function Globe3D({ onSelect }: { onSelect: (q: string) => void })
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef   = useRef<HTMLDivElement>(null);
   const onSelectRef  = useRef(onSelect);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
 
@@ -73,13 +74,50 @@ export default function Globe3D({ onSelect }: { onSelect: (q: string) => void })
     const container = containerRef.current;
     const tooltip   = tooltipRef.current;
     if (!container || !tooltip) return;
-    return buildGlobe(container, tooltip, onSelectRef);
+
+    console.log("[Globe3D] mounted — container size:",
+      container.clientWidth, "×", container.clientHeight);
+
+    let cleanupFn: (() => void) | undefined;
+    let rafId: number;
+
+    // Defer one frame so Framer Motion finishes its scale animation
+    // and the container has real layout dimensions.
+    rafId = requestAnimationFrame(() => {
+      const w = container.clientWidth  || 350;
+      const h = container.clientHeight || 250;
+      console.log("[Globe3D] RAF — effective size:", w, "×", h);
+      try {
+        cleanupFn = buildGlobe(container, tooltip, onSelectRef, w, h);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("[Globe3D] buildGlobe threw:", msg);
+        setError(msg);
+      }
+    });
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      cleanupFn?.();
+    };
   }, []);
+
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-white/20 text-[10px]">
+        globe error — see console
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full h-full">
-      <div ref={containerRef} className="w-full h-full" />
-      {/* Fixed tooltip — escapes overflow:hidden on the card wrapper */}
+      {/* explicit inline height so h-full always resolves even inside transforms */}
+      <div
+        ref={containerRef}
+        style={{ width: "100%", height: "100%", minHeight: 200 }}
+      />
+      {/* Fixed tooltip so overflow:hidden on card wrapper doesn't clip it */}
       <div
         ref={tooltipRef}
         style={{
@@ -103,7 +141,7 @@ export default function Globe3D({ onSelect }: { onSelect: (q: string) => void })
   );
 }
 
-/* ── Lat/lon helpers ────────────────────────────────────────────── */
+/* ── Helpers ────────────────────────────────────────────────────── */
 function ll2v(lat: number, lon: number, r: number): THREE.Vector3 {
   const phi = (90 - lat) * Math.PI / 180;
   const th  = (lon + 180) * Math.PI / 180;
@@ -114,27 +152,28 @@ function ll2v(lat: number, lon: number, r: number): THREE.Vector3 {
   );
 }
 
-/* ── Globe initialiser — returns cleanup ────────────────────────── */
+/* ── Globe initialiser ──────────────────────────────────────────── */
 function buildGlobe(
   container: HTMLDivElement,
   tooltipEl: HTMLDivElement,
-  onSelectRef: MutableRefObject<(q: string) => void>
+  onSelectRef: MutableRefObject<(q: string) => void>,
+  initW: number,
+  initH: number,
 ): () => void {
 
   /* renderer */
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setSize(initW, initH);
   renderer.setClearColor(0x000008, 1);
   container.appendChild(renderer.domElement);
   const canvas = renderer.domElement;
   canvas.style.cursor = "grab";
+  canvas.style.display = "block";
 
   /* scene + camera */
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(
-    45, container.clientWidth / container.clientHeight, 0.1, 600
-  );
+  const camera = new THREE.PerspectiveCamera(45, initW / initH, 0.1, 600);
   camera.position.z = 4.5;
 
   /* stars */
@@ -158,7 +197,7 @@ function buildGlobe(
   scene.add(globeGroup);
   const R = 2;
 
-  /* mutable state */
+  /* state */
   let clouds:    THREE.Mesh | null = null;
   let hovered:   { dot: THREE.Mesh; halo: THREE.Mesh; dest: Dest; phase: number } | null = null;
   let autoRot    = true;
@@ -169,51 +208,51 @@ function buildGlobe(
   const VHOV = new THREE.Vector3(2.4, 2.4, 2.4);
   const VNRM = new THREE.Vector3(1.0, 1.0, 1.0);
 
-  /* GLSL shaders */
+  /* GLSL */
   const DAY_NIGHT_VERT = `
     varying vec2 vUv; varying vec3 vNormal;
-    void main() {
-      vUv = uv;
-      vNormal = normalize(normalMatrix * normal);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    void main(){
+      vUv=uv;
+      vNormal=normalize(normalMatrix*normal);
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
     }`;
   const DAY_NIGHT_FRAG = `
     uniform sampler2D dayMap; uniform sampler2D nightMap; uniform vec3 sunDir;
     varying vec2 vUv; varying vec3 vNormal;
-    void main() {
-      vec3 day   = texture2D(dayMap,   vUv).rgb;
-      vec3 night = texture2D(nightMap, vUv).rgb * 1.6;
-      float d    = dot(vNormal, sunDir);
-      float m    = smoothstep(-0.18, 0.38, d);
-      gl_FragColor = vec4(mix(night, day, m), 1.0);
+    void main(){
+      vec3 day=texture2D(dayMap,vUv).rgb;
+      vec3 night=texture2D(nightMap,vUv).rgb*1.6;
+      float d=dot(vNormal,sunDir);
+      float m=smoothstep(-0.18,0.38,d);
+      gl_FragColor=vec4(mix(night,day,m),1.0);
     }`;
   const ATM_VERT = `
     varying vec3 vN;
-    void main() {
-      vN = normalize(normalMatrix * normal);
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    void main(){
+      vN=normalize(normalMatrix*normal);
+      gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);
     }`;
 
-  /* texture loading */
+  /* textures */
   const BASE   = "https://unpkg.com/three-globe/example/img/";
   const loader = new THREE.TextureLoader();
-  loader.crossOrigin = "anonymous";
   let pending = 3;
-  let texDay: THREE.Texture | null = null;
+  let texDay: THREE.Texture | null   = null;
   let texNight: THREE.Texture | null = null;
   let texCloud: THREE.Texture | null = null;
 
   function checkReady() { if (--pending === 0) buildEarth(); }
 
   loader.load(BASE + "earth-blue-marble.jpg",
-    (t) => { texDay   = t; checkReady(); }, undefined, () => checkReady());
+    (t) => { texDay   = t; checkReady(); }, undefined, () => { console.warn("[Globe3D] day texture failed"); checkReady(); });
   loader.load(BASE + "earth-night.jpg",
-    (t) => { texNight = t; checkReady(); }, undefined, () => checkReady());
+    (t) => { texNight = t; checkReady(); }, undefined, () => { console.warn("[Globe3D] night texture failed"); checkReady(); });
   loader.load(BASE + "earth-clouds.png",
-    (t) => { texCloud = t; checkReady(); }, undefined, () => checkReady());
+    (t) => { texCloud = t; checkReady(); }, undefined, () => { console.warn("[Globe3D] cloud texture failed"); checkReady(); });
 
   function buildEarth() {
-    /* earth sphere */
+    console.log("[Globe3D] textures ready — building earth");
+
     const earthMat = (texDay && texNight)
       ? new THREE.ShaderMaterial({
           uniforms: {
@@ -230,7 +269,6 @@ function buildGlobe(
 
     globeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(R, 64, 64), earthMat));
 
-    /* cloud layer */
     if (texCloud) {
       clouds = new THREE.Mesh(
         new THREE.SphereGeometry(R + 0.03, 64, 64),
@@ -242,53 +280,42 @@ function buildGlobe(
       globeGroup.add(clouds);
     }
 
-    /* atmosphere — inner Fresnel limb glow */
     globeGroup.add(new THREE.Mesh(
       new THREE.SphereGeometry(R + 0.2, 64, 64),
       new THREE.ShaderMaterial({
         uniforms: { c: { value: new THREE.Color(0x1a55ff) } },
         vertexShader: ATM_VERT,
-        fragmentShader: `uniform vec3 c; varying vec3 vN;
+        fragmentShader: `uniform vec3 c;varying vec3 vN;
           void main(){float i=pow(1.0-abs(dot(vN,vec3(0,0,1))),4.0);gl_FragColor=vec4(c,i*0.85);}`,
         side: THREE.FrontSide, blending: THREE.AdditiveBlending,
         transparent: true, depthWrite: false,
       })
     ));
 
-    /* atmosphere — outer halo ring */
     globeGroup.add(new THREE.Mesh(
       new THREE.SphereGeometry(R + 0.6, 64, 64),
       new THREE.ShaderMaterial({
         uniforms: { c: { value: new THREE.Color(0x002fa7) } },
         vertexShader: ATM_VERT,
-        fragmentShader: `uniform vec3 c; varying vec3 vN;
+        fragmentShader: `uniform vec3 c;varying vec3 vN;
           void main(){float i=pow(1.0-abs(dot(vN,vec3(0,0,1))),7.5);gl_FragColor=vec4(c,i*0.44);}`,
         side: THREE.BackSide, blending: THREE.AdditiveBlending,
         transparent: true, depthWrite: false,
       })
     ));
 
-    /* destination markers */
     const dotGeo  = new THREE.SphereGeometry(0.024, 10, 10);
     const haloGeo = new THREE.SphereGeometry(0.058, 10, 10);
 
     DEST.forEach((dest, idx) => {
       const pos = ll2v(dest.lat, dest.lon, R + 0.016);
-
-      const dot = new THREE.Mesh(
-        dotGeo,
-        new THREE.MeshBasicMaterial({ color: 0x00E5FF })
-      );
+      const dot = new THREE.Mesh(dotGeo,
+        new THREE.MeshBasicMaterial({ color: 0x00E5FF }));
       dot.position.copy(pos);
       globeGroup.add(dot);
 
-      const halo = new THREE.Mesh(
-        haloGeo,
-        new THREE.MeshBasicMaterial({
-          color: 0x00E5FF, transparent: true,
-          opacity: 0.28, depthWrite: false,
-        })
-      );
+      const halo = new THREE.Mesh(haloGeo,
+        new THREE.MeshBasicMaterial({ color: 0x00E5FF, transparent: true, opacity: 0.28, depthWrite: false }));
       halo.position.copy(pos);
       globeGroup.add(halo);
 
@@ -298,7 +325,7 @@ function buildGlobe(
     dotMeshes = markers.map(m => m.dot);
   }
 
-  /* ── Mouse interaction ─────────────────────────────────────────── */
+  /* mouse */
   function onMouseDown(e: MouseEvent) {
     isDragging = true; autoRot = false;
     prevX = e.clientX; prevY = e.clientY;
@@ -326,7 +353,7 @@ function buildGlobe(
   window.addEventListener("mousemove", onMouseMoveGlobal);
   canvas.addEventListener("wheel",     onWheel, { passive: false });
 
-  /* ── Raycasting + tooltip ──────────────────────────────────────── */
+  /* raycasting */
   const raycaster = new THREE.Raycaster();
   const mouse2    = new THREE.Vector2();
 
@@ -364,8 +391,7 @@ function buildGlobe(
         tooltipEl.style.top  = (e.clientY - 12) + "px";
       }
     } else if (hovered) {
-      hovered = null;
-      hideTip();
+      hovered = null; hideTip();
       canvas.style.cursor = "grab";
     }
   }
@@ -378,18 +404,18 @@ function buildGlobe(
   canvas.addEventListener("mousemove", onMouseMoveCanvas);
   canvas.addEventListener("click",     onClick);
 
-  /* ── Resize observer ───────────────────────────────────────────── */
+  /* resize */
   const ro = new ResizeObserver(() => {
     const w = container.clientWidth;
     const h = container.clientHeight;
-    if (w === 0 || h === 0) return;
+    if (!w || !h) return;
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   });
   ro.observe(container);
 
-  /* ── Animation loop ────────────────────────────────────────────── */
+  /* animation */
   const clock = new THREE.Clock();
   let rafId = 0;
 
@@ -415,7 +441,6 @@ function buildGlobe(
   }
   animate();
 
-  /* ── Cleanup ───────────────────────────────────────────────────── */
   return () => {
     cancelAnimationFrame(rafId);
     canvas.removeEventListener("mousedown", onMouseDown);
