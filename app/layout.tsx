@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "TrailIQ — הציוד הנכון. כל הרפתקה.",
   description:
     "AI-powered outdoor gear recommendations for hikers and trekkers. Bilingual Hebrew/English.",
-  themeColor: "#0A0F1E",
+  themeColor: "#030811",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

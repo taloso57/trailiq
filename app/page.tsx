@@ -43,7 +43,7 @@ export default function HomePage() {
        *
        * Video layers live absolutely behind everything (z 1-4).
        */}
-      <section className="relative min-h-screen flex flex-col overflow-hidden bg-black">
+      <section className="relative min-h-screen flex flex-col overflow-hidden bg-[#030811]">
 
         {/* ── Background video (z-[1..3]) ── */}
         <HeroVideo />
@@ -64,15 +64,15 @@ export default function HomePage() {
 
             {/* Main headline */}
             <h1
-              className="font-black leading-[0.88] tracking-tight text-white mb-8"
-              style={{ fontSize: "clamp(3.2rem, 7vw, 6.5rem)" }}
+              className="font-black leading-[0.84] tracking-[-0.02em] text-white mb-8"
+              style={{ fontSize: "clamp(4.2rem, 9.5vw, 9rem)" }}
             >
               {lang === "he" ? (
                 <>
                   הציוד<br />
                   <span
                     className="text-cyan"
-                    style={{ textShadow: "0 0 40px rgba(0,212,255,0.55), 0 0 80px rgba(0,212,255,0.25)" }}
+                    style={{ textShadow: "0 0 60px rgba(0,102,255,0.7), 0 0 120px rgba(0,212,255,0.35)" }}
                   >הנכון.</span><br />
                   לכל<br />
                   הרפתקה.
@@ -82,7 +82,7 @@ export default function HomePage() {
                   THE RIGHT<br />
                   <span
                     className="text-cyan"
-                    style={{ textShadow: "0 0 40px rgba(0,212,255,0.55), 0 0 80px rgba(0,212,255,0.25)" }}
+                    style={{ textShadow: "0 0 60px rgba(0,102,255,0.7), 0 0 120px rgba(0,212,255,0.35)" }}
                   >GEAR.</span><br />
                   EVERY<br />
                   ADVENTURE.
@@ -91,7 +91,7 @@ export default function HomePage() {
             </h1>
 
             {/* Subtitle */}
-            <p className="text-white/40 text-base font-light leading-relaxed mb-12 max-w-sm">
+            <p className="text-white/50 text-lg font-light leading-relaxed mb-12 max-w-sm">
               {lang === "he"
                 ? "בינה מלאכותית שמתאימה לך את הציוד המושלם לכל יעד בעולם."
                 : "AI that matches you with the perfect gear for any destination on earth."}
@@ -229,7 +229,7 @@ export default function HomePage() {
       {/* ── CHAT SECTION ──────────────────────────────────────────────────── */}
       <section
         ref={chatRef}
-        className="bg-black border-t border-white/5 py-24"
+        className="bg-[#030811] border-t border-blue/10 py-24"
       >
         <div className="max-w-7xl mx-auto px-6">
           <motion.div

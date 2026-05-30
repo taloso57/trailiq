@@ -46,9 +46,10 @@ export default function Navbar() {
     <header
       className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-black/85 backdrop-blur-2xl border-b border-white/6"
+          ? "backdrop-blur-2xl border-b border-blue/10"
           : "bg-transparent"
       }`}
+      style={scrolled ? { background: "rgba(3,8,17,0.92)" } : undefined}
     >
       <div className="max-w-7xl mx-auto px-6 h-18 flex items-center justify-between" style={{ height: "72px" }}>
 
@@ -58,8 +59,10 @@ export default function Navbar() {
           onClick={fireHomeReset}
           className="flex items-center gap-2.5 group"
         >
-          <span className="relative w-7 h-7 rounded-full bg-white grid place-items-center">
-            <span className="block w-2.5 h-2.5 rounded-full bg-black" />
+          <span
+            className="relative w-7 h-7 rounded-full bg-white grid place-items-center transition-shadow duration-300 group-hover:shadow-[0_0_16px_rgba(0,102,255,0.5)]"
+          >
+            <span className="block w-2.5 h-2.5 rounded-full bg-[#0066FF]" />
           </span>
           <span className="text-xl font-black tracking-[0.12em] uppercase text-white group-hover:text-white/80 transition-colors duration-200">
             {t.brand}
@@ -67,7 +70,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-10 text-lg text-white/50 tracking-[0.08em] uppercase font-medium">
+        <nav className="hidden md:flex items-center gap-10 text-sm text-white/50 tracking-[0.08em] uppercase font-semibold">
           {links.map((l) => (
             <Link
               key={l.href}
@@ -124,7 +127,8 @@ export default function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="md:hidden overflow-hidden bg-black border-b border-white/8"
+            className="md:hidden overflow-hidden border-b border-blue/10"
+            style={{ background: "rgba(3,8,17,0.97)" }}
           >
             <div className="px-6 py-5 flex flex-col gap-4 text-lg tracking-[0.08em] uppercase">
               {links.map((l) => (

@@ -34,7 +34,13 @@ export default function SiteFooter() {
   const { rate } = useExchangeRate();
 
   return (
-    <footer className="bg-black border-t border-white/5" aria-label="Footer">
+    <footer className="border-t border-blue/10" style={{ background: "#030811" }} aria-label="Footer">
+
+      {/* ── Blue gradient accent line at very top ── */}
+      <div
+        className="h-px w-full"
+        style={{ background: "linear-gradient(90deg, transparent 0%, #0066FF 30%, #00D4FF 70%, transparent 100%)" }}
+      />
 
       {/* ── Affiliate disclosure strip ── */}
       <div className="border-b border-white/4 bg-white/[0.015] py-3 px-6">
@@ -110,7 +116,7 @@ export default function SiteFooter() {
         </div>
 
         {/* ── Bottom bar: copyright + rate + social ── */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-white/5">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-blue/8">
           <div className="flex items-center gap-5" dir="rtl">
             <p className="text-white/15 text-[10px] tracking-wide">
               © 2026 TrailIQ. כל הזכויות שמורות.
