@@ -26,7 +26,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-base font-bold text-white mb-3 tracking-tight">1. אודות האתר</h2>
             <p>
-              TrailIQ (<span className="text-white/80 font-medium">trailiq-two.vercel.app</span>) הוא אתר
+              TrailIQ (<span className="text-white/80 font-medium">trailiq.co</span>) הוא אתר
               השוואה ושיווק שותפים לציוד טיולים. אנחנו{" "}
               <strong className="text-white/80">אינם חנות מקוונת ואינם מוכרים מוצרים ישירות</strong>.
               כל הרכישות מתבצעות ישירות מול הקמעונאים השונים דרך קישורים חיצוניים.

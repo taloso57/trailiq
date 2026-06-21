@@ -1,7 +1,6 @@
 import { MetadataRoute } from 'next'
 
-// TODO: Update domain after purchase (replace trailiq-two.vercel.app with real domain)
-const baseUrl = 'https://trailiq-two.vercel.app'
+const baseUrl = 'https://trailiq.co'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [

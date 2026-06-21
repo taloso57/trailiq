@@ -11,10 +11,10 @@ import CookieBanner from "@/components/CookieBanner";
 import SkipLink from "@/components/SkipLink";
 import Script from "next/script";
 
-// TODO: Update domain after purchase (replace trailiq-two.vercel.app with real domain)
-const SITE_URL = "https://trailiq-two.vercel.app";
+const SITE_URL = "https://trailiq.co";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "TrailIQ — הציוד הנכון. כל הרפתקה.",
   description:
     "AI-powered outdoor gear recommendations for hikers and trekkers. Bilingual Hebrew/English.",
